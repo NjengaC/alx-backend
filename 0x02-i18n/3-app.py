@@ -30,7 +30,7 @@ def get_locale() -> str:
 def get_index() -> str:
     """index route
     """
-    return render_template('3-index.html')
+    return render_template('3-index.html', get_locale=get_locale)
 
 
 if __name__ == '__main__':
