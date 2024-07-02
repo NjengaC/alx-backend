@@ -1,54 +1,23 @@
 #!/usr/bin/env python3
-"""This module helps with internalization and localization of the application.
+"""This module helps with internalization and localization the application"""
 
-    Config - contains configuration settings for the application.
-
-    get_locale:
-        Returns the preferred language for the user.
-
-    welcome_page:
-        Renders and returns the HTML welcome page.
-"""
-
-from flask_babel import Babel
+from flask_babel import Babel, _, gettext
 from flask import Flask, render_template, request, g
 from typing import Mapping, Union
 
 
 class Config:
-    """config available languages for the babel
-        Language config
-        Locale config
-        Timezone config
-    """
+    """Configurations for the Flask application."""
     LANGUAGES = ["en", "fr"]
     BABEL_DEFAULT_LOCALE = 'en'
     BABEL_DEFAULT_TIMEZONE = 'UTC'
 
 
-# Instantiate the flask application
 app = Flask(__name__)
-
-# load configuration from class config object
 app.config.from_object(Config)
-
-# Instantiate Babel application to start babel
 babel = Babel(app)
 
-
-@babel.localeselector
-def get_locale() -> Union[str, None]:
-    """Determines the preferred language for the user.
-
-    Returns:
-        str: Preferred language for the user.
-    """
-    value = request.args.get("locale")
-    if value in app.config["LANGUAGES"]:
-        return value
-    return request.accept_languages.best_match(app.config["LANGUAGES"])
-
-
+# Mock user database
 users: Mapping[int, Mapping[str, Union[str, None]]] = {
     1: {"name": "Balou", "locale": "fr", "timezone": "Europe/Paris"},
     2: {"name": "Beyonce", "locale": "en", "timezone": "US/Central"},
@@ -58,7 +27,7 @@ users: Mapping[int, Mapping[str, Union[str, None]]] = {
 
 
 def get_user() -> Union[Mapping[str, Union[str, None]], None]:
-    """Get user information from the database"""
+    """Retrieve user information based on login_as parameter."""
     login_info = request.args.get('login_as')
     if login_info:
         return users.get(int(login_info), None)
@@ -67,20 +36,26 @@ def get_user() -> Union[Mapping[str, Union[str, None]], None]:
 
 @app.before_request
 def before_request() -> None:
-    """handle before request"""
-    value = get_user()
-    if value:
-        g.user = value
+    """Set g.user to the user retrieved from get_user()."""
+    g.user = get_user()
 
 
 @app.route("/", methods=["GET"])
 def welcome_page() -> str:
-    """Renders the HTML welcome page.
-
-    Returns:
-        str: Rendered HTML welcome page.
-    """
+    """Render the HTML welcome page."""
     return render_template('5-index.html')
+
+
+@app.template_global()
+def _(msgid: str, **kwargs) -> str:
+    """Mock implementation of gettext."""
+    translations = {
+        "home_title": "Welcome to the Homepage",
+        "home_header": "Welcome to our Website",
+        "logged_in_as": "You are logged in as %(username)s.",
+        "not_logged_in": "You are not logged in."
+    }
+    return translations[msgid] % kwargs
 
 
 if __name__ == '__main__':
